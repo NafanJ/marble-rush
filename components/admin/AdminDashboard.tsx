@@ -66,9 +66,21 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
   }, []);
 
   async function fetchActiveRace() {
-    const res = await fetch('/api/races/active');
+    // Try the latest manageable race first (includes drafts) so the admin
+    // still sees their race after a page refresh.
+    const res = await fetch('/api/races/latest', { headers });
     if (res.ok) {
       const data = await res.json() as Race | null;
+      if (data) {
+        setRace(data);
+        fetchEntrants(data.id);
+        return;
+      }
+    }
+    // Fall back to the public active-race endpoint
+    const res2 = await fetch('/api/races/active');
+    if (res2.ok) {
+      const data = await res2.json() as Race | null;
       if (data) {
         setRace(data);
         fetchEntrants(data.id);
