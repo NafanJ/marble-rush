@@ -103,7 +103,10 @@ export default function RacePage({ params }: PageProps) {
         const resRes = await fetch(`/api/races/${raceId}/results`);
         if (resRes.ok) {
           const res = await resRes.json() as FinishResult[];
-          if (res.length > 0) setResults(res);
+          // Use empty array sentinel so the page knows results were fetched (even if none exist)
+          setResults(res.length > 0 ? res : []);
+        } else {
+          setResults([]);
         }
       }
 
@@ -164,7 +167,7 @@ export default function RacePage({ params }: PageProps) {
           const res = await fetch(`/api/races/${raceId}/results`);
           if (res.ok) {
             const data = await res.json() as FinishResult[];
-            if (data.length > 0) setResults(data);
+            setResults(data);
           }
         }
       )
@@ -298,15 +301,27 @@ export default function RacePage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Complete state without results loaded yet */}
-      {race.status === 'complete' && !results && (
+      {/* Complete — still fetching results */}
+      {race.status === 'complete' && results === null && (
         <div className="min-h-[70vh] flex items-center justify-center">
           <LoadingSpinner message="Loading results..." />
         </div>
       )}
 
+      {/* Complete — results fetched but empty (race ended without physics results) */}
+      {race.status === 'complete' && results !== null && results.length === 0 && (
+        <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-white/60">
+          <div className="text-5xl">🏁</div>
+          <p className="text-lg font-semibold text-white">Race Complete</p>
+          <p className="text-sm">No results were recorded for this race.</p>
+          <a href="/" className="mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-semibold transition-colors">
+            Back to Home
+          </a>
+        </div>
+      )}
+
       {/* Results modal */}
-      {results && (
+      {results !== null && results.length > 0 && (
         <ResultsModal
           results={results}
           entrants={entrants}
