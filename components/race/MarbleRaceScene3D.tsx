@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useMemo, createRef, useState } from 'react';
+import { useRef, useEffect, useCallback, useMemo, createRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
   RigidBody,
@@ -92,7 +92,7 @@ function MarbleLabel({
 }) {
   const groupRef = useRef<THREE.Group>(null);
   useFrame(() => {
-    if (bodyRef.current && groupRef.current) {
+    if (bodyRef?.current && groupRef.current) {
       const p = bodyRef.current.translation();
       groupRef.current.position.set(p.x, p.y + MR + 0.45, p.z);
     }
@@ -137,7 +137,6 @@ export default function MarbleRaceScene3D({
   onPositionUpdate,
 }: Props) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const [marbleGravityScale, setMarbleGravityScale] = useState(0);
 
   const marbleRefs = useMemo<React.RefObject<RapierRigidBody>[]>(
     () => entrants.map(() => createRef<RapierRigidBody>()),
@@ -159,10 +158,9 @@ export default function MarbleRaceScene3D({
   useEffect(() => { onCompleteRef.current = onRaceComplete; }, [onRaceComplete]);
   useEffect(() => { onPosRef.current = onPositionUpdate; }, [onPositionUpdate]);
 
-  // Release marbles: flip gravityScale via state so rapier's prop handler applies it
+  // Physics unpauses when gateOpen=true (handled in MarbleRaceGame via Physics paused prop)
   useEffect(() => {
     if (gateOpen) {
-      setMarbleGravityScale(1.0);
       raceStart.current = Date.now();
       active.current = true;
     }
@@ -177,7 +175,7 @@ export default function MarbleRaceScene3D({
       e,
       fin: finished.current[i],
       ms:  finishTimes.current[i],
-      y:   marbleRefs[i].current?.translation().y ?? FINISH_Y,
+      y:   marbleRefs[i]?.current?.translation().y ?? FINISH_Y,
     }));
 
     const fin   = items.filter(m => m.fin).sort((a, b) => (a.ms ?? 0) - (b.ms ?? 0));
@@ -229,7 +227,7 @@ export default function MarbleRaceScene3D({
 
     for (let i = 0; i < entrants.length; i++) {
       if (finished.current[i]) continue;
-      const rb = marbleRefs[i].current;
+      const rb = marbleRefs[i]?.current;
       if (!rb) continue;
       const p = rb.translation();
       if (p.y < minY) minY = p.y;
@@ -386,7 +384,6 @@ export default function MarbleRaceScene3D({
             friction={0.3}
             linearDamping={0.02}
             angularDamping={0.1}
-            gravityScale={marbleGravityScale}
           >
             <BallCollider args={[MR]} />
             <mesh castShadow>
