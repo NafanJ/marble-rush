@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
 import EntrantList from '../race/EntrantList';
+import Countdown from '../race/Countdown';
 import RaceForm, { RaceFormData } from './RaceForm';
 import ResultsModal from '../race/ResultsModal';
 import type { MarbleRaceGameHandle } from '../race/MarbleRaceGame';
@@ -47,11 +48,13 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
   const [race, setRace] = useState<Race | null>(null);
   const [entrants, setEntrants] = useState<Entrant[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCountdown, setShowCountdown] = useState(false);
   const [results, setResults] = useState<FinishResult[] | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [publicUrl, setPublicUrl] = useState('');
   const [copied, setCopied] = useState(false);
   const gameRef = useRef<MarbleRaceGameHandle | null>(null);
+  const raceIdRef = useRef<string | null>(null);
 
   const headers = {
     'Content-Type': 'application/json',
@@ -95,6 +98,36 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
       setEntrants(data);
     }
   }
+
+  // Keep raceIdRef current so countdown callback has a stable reference
+  useEffect(() => { raceIdRef.current = race?.id ?? null; }, [race?.id]);
+
+  // Show countdown overlay when status becomes 'countdown'
+  useEffect(() => {
+    if (race?.status === 'countdown') setShowCountdown(true);
+    else setShowCountdown(false);
+  }, [race?.status]);
+
+  // Start physics when race transitions to 'running'
+  useEffect(() => {
+    if (race?.status !== 'running') return;
+    const t = setTimeout(() => { gameRef.current?.startRace(); }, 100);
+    return () => clearTimeout(t);
+  }, [race?.status]);
+
+  // Countdown completion → auto-transition to running
+  const handleCountdownComplete = useCallback(async () => {
+    setShowCountdown(false);
+    if (!raceIdRef.current) return;
+    setActionLoading('running');
+    const res = await fetch(`/api/races/${raceIdRef.current}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPassword },
+      body: JSON.stringify({ status: 'running' }),
+    });
+    if (res.ok) setRace(await res.json() as Race);
+    setActionLoading(null);
+  }, [adminPassword]);
 
   // Realtime subscriptions
   useEffect(() => {
@@ -230,11 +263,6 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
     }
   }
 
-  // Start the gate in Phaser when admin triggers it
-  function handleStartRacePhysics() {
-    gameRef.current?.startRace();
-  }
-
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
       {/* Header */}
@@ -312,12 +340,10 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
                   <Button
                     variant="primary"
                     loading={actionLoading === 'countdown'}
-                    onClick={async () => {
-                      await changeStatus('countdown');
-                    }}
+                    onClick={() => changeStatus('countdown')}
                     disabled={entrants.length < 1}
                   >
-                    ⏳ Start Countdown
+                    🏁 Start Race!
                   </Button>
                   <Button
                     variant="secondary"
@@ -335,18 +361,6 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
                     Cancel Race
                   </Button>
                 </>
-              )}
-              {race.status === 'countdown' && (
-                <Button
-                  variant="primary"
-                  loading={actionLoading === 'running'}
-                  onClick={async () => {
-                    await changeStatus('running');
-                    handleStartRacePhysics();
-                  }}
-                >
-                  🚀 Start Race!
-                </Button>
               )}
               {race.status === 'running' && (
                 <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
@@ -388,8 +402,11 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
             </div>
           </div>
 
-          {/* Entrant list */}
-          {['entries_open', 'countdown', 'draft'].includes(race.status) && (
+          {/* Countdown overlay */}
+          {showCountdown && <Countdown onComplete={handleCountdownComplete} />}
+
+          {/* Entries open — entrant list */}
+          {['entries_open', 'draft'].includes(race.status) && (
             <div className="card p-6">
               <EntrantList
                 entrants={entrants}
@@ -400,16 +417,26 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
             </div>
           )}
 
-          {/* Physics game — shown during countdown and running */}
-          {['countdown', 'running'].includes(race.status) && (
-            <div className="card p-4">
-              <MarbleRaceGame
-                ref={gameRef}
-                race={race}
-                entrants={entrants}
-                isAdmin
-                onRaceComplete={handleRaceComplete}
-              />
+          {/* Running — game + entrant list side by side */}
+          {race.status === 'running' && (
+            <div className="flex gap-4 items-start">
+              <div className="flex-1 card p-4">
+                <MarbleRaceGame
+                  ref={gameRef}
+                  race={race}
+                  entrants={entrants}
+                  isAdmin
+                  onRaceComplete={handleRaceComplete}
+                />
+              </div>
+              <div className="w-56 flex-shrink-0 card p-4">
+                <EntrantList
+                  entrants={entrants}
+                  maxEntries={race.maxEntries}
+                  isAdmin
+                  onRemove={removeEntrant}
+                />
+              </div>
             </div>
           )}
         </div>

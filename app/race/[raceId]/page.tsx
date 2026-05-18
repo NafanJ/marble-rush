@@ -7,7 +7,7 @@ import { Race, Entrant, FinishResult, MarblePosition, RaceRow, EntrantRow } from
 import { supabase } from '@/lib/supabase';
 import Lobby from '@/components/race/Lobby';
 import Countdown from '@/components/race/Countdown';
-import PositionPanel from '@/components/race/PositionPanel';
+import EntrantList from '@/components/race/EntrantList';
 import ResultsModal from '@/components/race/ResultsModal';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import type { MarbleRaceGameHandle } from '@/components/race/MarbleRaceGame';
@@ -328,12 +328,14 @@ export default function RacePage({ params }: PageProps) {
               />
             </div>
 
-            {/* Position panel */}
-            {positions.length > 0 && (
-              <div className="hidden lg:block flex-shrink-0">
-                <PositionPanel positions={positions} entrants={entrants} />
-              </div>
-            )}
+            {/* Entrant list — stays visible throughout the race */}
+            <div className="hidden lg:block w-52 flex-shrink-0 card p-4">
+              <EntrantList
+                entrants={entrants}
+                maxEntries={race.maxEntries}
+                highlightId={myEntrantId ?? undefined}
+              />
+            </div>
           </div>
         </div>
       )}

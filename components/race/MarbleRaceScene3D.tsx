@@ -49,7 +49,7 @@ function generateObstacles(seed: string, difficulty: string): Obstacles {
   const colStep = (xSpan * 2) / Math.max(pegCols - 1, 1);
 
   for (let row = 0; row < pegRows; row++) {
-    const y = -4 - row * (17 / Math.max(pegRows - 1, 1));
+    const y = -10 - row * (13 / Math.max(pegRows - 1, 1));
     const isOdd = row % 2 === 1;
     // Staggered rows have one fewer peg, offset by half a column step
     const colsThisRow = isOdd ? pegCols - 1 : pegCols;
@@ -158,14 +158,15 @@ export default function MarbleRaceScene3D({
     []
   );
 
-  const finished     = useRef<boolean[]>(entrants.map(() => false));
-  const finishTimes  = useRef<(number | null)[]>(entrants.map(() => null));
-  const finishedCnt  = useRef(0);
-  const raceStart    = useRef(0);
-  const active       = useRef(false);
-  const doneCalled   = useRef(false);
-  const posTimer     = useRef(0);
-  const elapsedMs    = useRef(0);
+  const finished          = useRef<boolean[]>(entrants.map(() => false));
+  const finishTimes       = useRef<(number | null)[]>(entrants.map(() => null));
+  const finishedCnt       = useRef(0);
+  const raceStart         = useRef(0);
+  const active            = useRef(false);
+  const doneCalled        = useRef(false);
+  const posTimer          = useRef(0);
+  const elapsedMs         = useRef(0);
+  const firstFinishTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onCompleteRef = useRef(onRaceComplete);
   const onPosRef      = useRef(onPositionUpdate);
@@ -174,10 +175,10 @@ export default function MarbleRaceScene3D({
 
   useEffect(() => {
     if (gateOpen) {
-      // Nudge every marble so none can sit perfectly balanced on a peg
+      // Nudge every marble with a random lateral kick so none balances on a peg
       marbleRefs.forEach(r => {
         r.current?.applyImpulse(
-          { x: (Math.random() - 0.5) * 0.4, y: -0.05, z: (Math.random() - 0.5) * 0.1 },
+          { x: (Math.random() - 0.5) * 0.9, y: -0.05, z: (Math.random() - 0.5) * 0.2 },
           true
         );
       });
@@ -190,6 +191,7 @@ export default function MarbleRaceScene3D({
     if (doneCalled.current) return;
     doneCalled.current = true;
     active.current = false;
+    if (firstFinishTimer.current) clearTimeout(firstFinishTimer.current);
 
     const items = entrants.map((e, i) => ({
       e,
@@ -257,6 +259,10 @@ export default function MarbleRaceScene3D({
         finishTimes.current[i] = Date.now() - raceStart.current;
         finishedCnt.current++;
         if (finishedCnt.current >= entrants.length) { endRace(); return; }
+        // End race 5s after the first marble finishes — don't wait for stuck marbles
+        if (finishedCnt.current === 1 && !firstFinishTimer.current) {
+          firstFinishTimer.current = setTimeout(() => endRace(), 5000);
+        }
       }
     }
 
