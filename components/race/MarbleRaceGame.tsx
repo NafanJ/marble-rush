@@ -41,7 +41,7 @@ const MarbleRaceGame = forwardRef<MarbleRaceGameHandle, Props>(function MarbleRa
         camera={{ position: [10, 2, 14], fov: 55 }}
       >
         <Suspense fallback={null}>
-          <Physics gravity={[0, -22 * race.speedMultiplier, 0]} timeStep="vary" paused={!gateOpen}>
+          <Physics gravity={[0, -22 * race.speedMultiplier, 0]} timeStep="vary">
             <MarbleRaceScene3D
               entrants={entrants}
               gateOpen={gateOpen}

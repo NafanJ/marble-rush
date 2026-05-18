@@ -161,7 +161,6 @@ export default function RacePage({ params }: PageProps) {
           if (updated.status === 'running') {
             setShowCountdown(false);
             setRaceRunning(true);
-            setTimeout(() => { gameRef.current?.startRace(); }, 500);
           }
           if (updated.status === 'complete') {
             setRaceRunning(false);
@@ -215,6 +214,14 @@ export default function RacePage({ params }: PageProps) {
     setShowCountdown(false);
     setRaceRunning(true);
   }, []);
+
+  // Start the race timer/tracking whenever the game canvas becomes visible.
+  // Covers both: local countdown completion and realtime status update.
+  useEffect(() => {
+    if (!raceRunning || showCountdown) return;
+    const t = setTimeout(() => { gameRef.current?.startRace(); }, 50);
+    return () => clearTimeout(t);
+  }, [raceRunning, showCountdown]);
 
   const handleRaceComplete = useCallback((finishResults: FinishResult[]) => {
     setResults(finishResults);
