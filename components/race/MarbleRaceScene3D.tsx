@@ -1,13 +1,14 @@
 'use client';
 
 import { useRef, useEffect, useCallback, useMemo, createRef } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import {
   RigidBody,
   BallCollider,
   type RapierRigidBody,
 } from '@react-three/rapier';
-import { Text } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import type { Entrant, FinishResult, MarblePosition } from '@/lib/types';
 
@@ -80,7 +81,7 @@ function generateObstacles(seed: string, difficulty: string): Obstacles {
   return { pegs, bumpers, ramps };
 }
 
-// Label that tracks its marble body each frame
+// Label rendered as DOM overlay — no font CDN needed
 function MarbleLabel({
   bodyRef,
   name,
@@ -94,22 +95,25 @@ function MarbleLabel({
   useFrame(() => {
     if (bodyRef.current && groupRef.current) {
       const p = bodyRef.current.translation();
-      groupRef.current.position.set(p.x, p.y + MR + 0.35, p.z);
+      groupRef.current.position.set(p.x, p.y + MR + 0.45, p.z);
     }
   });
   return (
     <group ref={groupRef}>
-      <Text
-        fontSize={0.28}
-        color={color}
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.04}
-        outlineColor="#000000"
-        renderOrder={1}
-      >
-        {name}
-      </Text>
+      <Html center zIndexRange={[10, 0]}>
+        <div style={{
+          color,
+          fontSize: '11px',
+          fontWeight: 'bold',
+          whiteSpace: 'nowrap',
+          textShadow: '0 0 4px #000, 0 1px 3px #000',
+          pointerEvents: 'none',
+          userSelect: 'none',
+          lineHeight: 1,
+        }}>
+          {name}
+        </div>
+      </Html>
     </group>
   );
 }
@@ -133,7 +137,8 @@ export default function MarbleRaceScene3D({
   onRaceComplete,
   onPositionUpdate,
 }: Props) {
-  const { camera } = useThree();
+  const controlsRef = useRef<OrbitControlsImpl>(null);
+  const gateRef     = useRef<RapierRigidBody>(null);
 
   const marbleRefs = useMemo<React.RefObject<RapierRigidBody>[]>(
     () => entrants.map(() => createRef<RapierRigidBody>()),
@@ -149,16 +154,16 @@ export default function MarbleRaceScene3D({
   const doneCalled   = useRef(false);
   const posTimer     = useRef(0);
   const elapsedMs    = useRef(0);
-  const camTarget    = useRef(new THREE.Vector3(10, 2, 14));
-  const lookTarget   = useRef(new THREE.Vector3(0, -3, 0));
 
   const onCompleteRef = useRef(onRaceComplete);
   const onPosRef      = useRef(onPositionUpdate);
   useEffect(() => { onCompleteRef.current = onRaceComplete; }, [onRaceComplete]);
   useEffect(() => { onPosRef.current = onPositionUpdate; }, [onPositionUpdate]);
 
+  // Gate: disable physics body directly instead of conditional unmount
   useEffect(() => {
-    if (gateOpen) {
+    if (gateOpen && gateRef.current) {
+      gateRef.current.setEnabled(false);
       raceStart.current = Date.now();
       active.current = true;
     }
@@ -203,6 +208,13 @@ export default function MarbleRaceScene3D({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Stable Z offsets per marble so they don't re-randomise on re-render
+  const spawnZ = useMemo(
+    () => entrants.map(() => (Math.random() - 0.5) * 0.1),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
   const obstacles = useMemo(
     () => generateObstacles(trackSeed, trackDifficulty),
     [trackSeed, trackDifficulty]
@@ -231,12 +243,11 @@ export default function MarbleRaceScene3D({
       }
     }
 
-    // Smooth camera follow
-    if (minY < Infinity) {
-      camTarget.current.set(10, minY + 6, 14);
-      lookTarget.current.set(0, minY - 2, 0);
-      camera.position.lerp(camTarget.current, 0.04);
-      (camera as THREE.PerspectiveCamera).lookAt(lookTarget.current);
+    // Smoothly pan OrbitControls target to follow the leader — user can still zoom/rotate
+    if (minY < Infinity && controlsRef.current) {
+      const targetY = Math.max(FINISH_Y, minY - 2);
+      controlsRef.current.target.lerp(new THREE.Vector3(0, targetY, 0), 0.04);
+      controlsRef.current.update();
     }
 
     // Position updates every 200ms
@@ -254,6 +265,15 @@ export default function MarbleRaceScene3D({
 
   return (
     <>
+      {/* OrbitControls — user can zoom and rotate; target follows leader marble */}
+      <OrbitControls
+        ref={controlsRef}
+        enablePan
+        minDistance={4}
+        maxDistance={80}
+        target={[0, 0, 0]}
+      />
+
       {/* Lighting */}
       <ambientLight intensity={0.5} />
       <directionalLight position={[10, 15, 10]} intensity={1.2} castShadow
@@ -301,15 +321,13 @@ export default function MarbleRaceScene3D({
         </mesh>
       </RigidBody>
 
-      {/* Gate — removed when race starts */}
-      {!gateOpen && (
-        <RigidBody type="fixed" restitution={0.2} friction={0.5}>
-          <mesh position={[0, GATE_Y, 0]}>
-            <boxGeometry args={[HW * 2, 0.2, HD * 2]} />
-            <meshStandardMaterial color="#4a1a8e" emissive="#2a0a5e" emissiveIntensity={0.5} />
-          </mesh>
-        </RigidBody>
-      )}
+      {/* Gate — always rendered; physics disabled via setEnabled(false) when race starts */}
+      <RigidBody ref={gateRef} type="fixed" restitution={0.2} friction={0.5}>
+        <mesh position={[0, GATE_Y, 0]} visible={!gateOpen}>
+          <boxGeometry args={[HW * 2, 0.2, HD * 2]} />
+          <meshStandardMaterial color="#4a1a8e" emissive="#2a0a5e" emissiveIntensity={0.5} />
+        </mesh>
+      </RigidBody>
 
       {/* Pegs */}
       {obstacles.pegs.map((peg, i) => (
@@ -350,17 +368,20 @@ export default function MarbleRaceScene3D({
         <boxGeometry args={[HW * 2 + 0.5, 0.08, HD * 2]} />
         <meshStandardMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={0.8} />
       </mesh>
-      <Text
-        position={[0, FINISH_Y + 0.7, HD + 0.01]}
-        fontSize={0.55}
-        color="white"
-        anchorX="center"
-        anchorY="middle"
-        outlineWidth={0.05}
-        outlineColor="#000000"
-      >
-        🏁 FINISH
-      </Text>
+      <group position={[0, FINISH_Y + 0.9, HD + 0.01]}>
+        <Html center zIndexRange={[10, 0]}>
+          <div style={{
+            color: '#ffd700',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            textShadow: '0 0 8px #000, 0 2px 4px #000',
+            pointerEvents: 'none',
+          }}>
+            🏁 FINISH
+          </div>
+        </Html>
+      </group>
 
       {/* Marbles */}
       {entrants.map((entrant, i) => (
@@ -368,7 +389,7 @@ export default function MarbleRaceScene3D({
           <RigidBody
             ref={marbleRefs[i]}
             type="dynamic"
-            position={[spawnX[i] ?? 0, SPAWN_Y, (Math.random() - 0.5) * 0.1]}
+            position={[spawnX[i] ?? 0, SPAWN_Y, spawnZ[i] ?? 0]}
             colliders={false}
             restitution={0.4}
             friction={0.3}
