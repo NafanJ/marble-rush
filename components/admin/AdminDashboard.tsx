@@ -163,6 +163,20 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
     setActionLoading(null);
   }
 
+  async function restartRace() {
+    if (!race) return;
+    if (!confirm('Restart race? This will clear all entrants and results.')) return;
+    setActionLoading('restart');
+    const res = await fetch(`/api/races/${race.id}/restart`, { method: 'POST', headers });
+    if (res.ok) {
+      const updated = await res.json() as Race;
+      setRace(updated);
+      setEntrants([]);
+      setResults(null);
+    }
+    setActionLoading(null);
+  }
+
   async function addTestEntrants() {
     if (!race) return;
     setActionLoading('test_entrants');
@@ -357,6 +371,18 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
                   onClick={() => changeStatus('complete')}
                 >
                   Force End
+                </Button>
+              )}
+
+              {/* Restart — available once a race has progressed */}
+              {['countdown', 'running', 'complete', 'cancelled'].includes(race.status) && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  loading={actionLoading === 'restart'}
+                  onClick={restartRace}
+                >
+                  🔄 Restart Race
                 </Button>
               )}
             </div>

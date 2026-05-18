@@ -41,38 +41,52 @@ function generateObstacles(seed: string, difficulty: string): Obstacles {
   const bumpers: BumpObs[] = [];
   const ramps: RampObs[] = [];
 
-  const pegDensity = difficulty === 'easy' ? 0.6 : difficulty === 'chaos' ? 1.5 : 1.0;
-  const pegRows = Math.round(8 * pegDensity);
-  const pegCols = difficulty === 'chaos' ? 8 : 5;
-  const PEG_R = difficulty === 'chaos' ? 0.14 : 0.18;
+  // Plinko-style grid — wide spacing so marbles always have room to pass
+  const pegRows = difficulty === 'easy' ? 3 : difficulty === 'chaos' ? 6 : 5;
+  const pegCols = difficulty === 'easy' ? 3 : difficulty === 'chaos' ? 4 : 4;
+  const PEG_R = 0.22;
+  const xSpan = HW - 0.9; // keep pegs away from walls
+  const colStep = (xSpan * 2) / Math.max(pegCols - 1, 1);
 
   for (let row = 0; row < pegRows; row++) {
-    const y = -3 - row * (19 / Math.max(pegRows - 1, 1));
-    const offset = row % 2 === 0 ? 0 : ((HW * 2) / pegCols) * 0.5;
-    for (let col = 0; col < pegCols; col++) {
-      const xBase = -HW + 0.5 + offset + col * ((HW * 2 - 1) / Math.max(pegCols - 1, 1));
+    const y = -4 - row * (17 / Math.max(pegRows - 1, 1));
+    const isOdd = row % 2 === 1;
+    // Staggered rows have one fewer peg, offset by half a column step
+    const colsThisRow = isOdd ? pegCols - 1 : pegCols;
+    const rowXStart = isOdd ? -xSpan + colStep * 0.5 : -xSpan;
+    for (let col = 0; col < colsThisRow; col++) {
       pegs.push({
-        x: Math.max(-HW + 0.5, Math.min(HW - 0.5, xBase + (rng() - 0.5) * 0.5)),
-        y: y + (rng() - 0.5) * 0.3,
+        x: rowXStart + col * colStep + (rng() - 0.5) * 0.15,
+        y: y + (rng() - 0.5) * 0.4,
         r: PEG_R,
       });
     }
   }
 
-  const rampCount = difficulty === 'chaos' ? 7 : difficulty === 'easy' ? 3 : 4;
+  // Ramps — zigzag so marbles always roll INWARD (toward center), then down
+  // Positive Z rotation = right end rises. Left ramp needs right end LOW → negative angle.
+  // Right ramp needs left end LOW → positive angle.
+  const rampCount = difficulty === 'chaos' ? 5 : difficulty === 'easy' ? 2 : 3;
   for (let i = 0; i < rampCount; i++) {
     const isLeft = i % 2 === 0;
-    const y = -35 - i * (22 / Math.max(rampCount - 1, 1));
-    const rampAngle = (difficulty === 'chaos' ? 0.38 : 0.28) * (isLeft ? 1 : -1);
-    ramps.push({ x: isLeft ? -0.8 : 0.8, y, len: 6.5, angle: rampAngle });
+    const y = -28 - i * (20 / Math.max(rampCount - 1, 1));
+    const rampAngle = (difficulty === 'chaos' ? 0.35 : 0.3) * (isLeft ? -1 : 1);
+    ramps.push({ x: isLeft ? -0.5 : 0.5, y, len: 5.5, angle: rampAngle });
   }
 
-  const bumperCount = difficulty === 'easy' ? 6 : difficulty === 'chaos' ? 14 : 10;
-  for (let i = 0; i < bumperCount; i++) {
+  // Bumpers — enforce minimum separation so marbles can always pass between them
+  const bumperCount = difficulty === 'easy' ? 4 : difficulty === 'chaos' ? 9 : 6;
+  const placed: { x: number; y: number }[] = [];
+  let attempts = 0;
+  while (placed.length < bumperCount && attempts < 300) {
+    attempts++;
+    const bx = -HW + 1.0 + rng() * (HW * 2 - 2.0);
+    const by = -53 - rng() * 16;
+    if (placed.some(p => Math.hypot(p.x - bx, p.y - by) < 2.5)) continue;
+    placed.push({ x: bx, y: by });
     bumpers.push({
-      x: -HW + 0.6 + rng() * (HW * 2 - 1.2),
-      y: -57 - rng() * 16,
-      r: 0.35 + rng() * 0.15,
+      x: bx, y: by,
+      r: 0.35 + rng() * 0.1,
       color: BUMPER_COLORS[Math.floor(rng() * BUMPER_COLORS.length)],
     });
   }
