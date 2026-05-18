@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useMemo, createRef } from 'react';
+import { useRef, useEffect, useCallback, useMemo, createRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import {
   RigidBody,
@@ -137,6 +137,7 @@ export default function MarbleRaceScene3D({
   onPositionUpdate,
 }: Props) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
+  const [marbleGravityScale, setMarbleGravityScale] = useState(0);
 
   const marbleRefs = useMemo<React.RefObject<RapierRigidBody>[]>(
     () => entrants.map(() => createRef<RapierRigidBody>()),
@@ -158,14 +159,14 @@ export default function MarbleRaceScene3D({
   useEffect(() => { onCompleteRef.current = onRaceComplete; }, [onRaceComplete]);
   useEffect(() => { onPosRef.current = onPositionUpdate; }, [onPositionUpdate]);
 
-  // Release marbles: enable gravity on each body when race starts
+  // Release marbles: flip gravityScale via state so rapier's prop handler applies it
   useEffect(() => {
     if (gateOpen) {
-      marbleRefs.forEach(r => r.current?.setGravityScale(1.0, true));
+      setMarbleGravityScale(1.0);
       raceStart.current = Date.now();
       active.current = true;
     }
-  }, [gateOpen, marbleRefs]);
+  }, [gateOpen]);
 
   const endRace = useCallback(() => {
     if (doneCalled.current) return;
@@ -385,7 +386,7 @@ export default function MarbleRaceScene3D({
             friction={0.3}
             linearDamping={0.02}
             angularDamping={0.1}
-            gravityScale={0}
+            gravityScale={marbleGravityScale}
           >
             <BallCollider args={[MR]} />
             <mesh castShadow>
