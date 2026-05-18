@@ -163,6 +163,27 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
     setActionLoading(null);
   }
 
+  async function addTestEntrants() {
+    if (!race) return;
+    setActionLoading('test_entrants');
+    const names = ['Zippy', 'Blaze', 'Comet', 'Rocket', 'Storm', 'Flash', 'Turbo', 'Nova', 'Spike', 'Dash'];
+    await Promise.all(
+      names.map((name, i) =>
+        fetch('/api/entrants', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            raceId: race.id,
+            displayName: name,
+            browserSessionId: `test-bot-${i}-${Date.now()}`,
+          }),
+        })
+      )
+    );
+    await fetchEntrants(race.id);
+    setActionLoading(null);
+  }
+
   async function removeEntrant(entrantId: string) {
     const res = await fetch(`/api/entrants/${entrantId}`, {
       method: 'DELETE',
@@ -283,6 +304,14 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
                     disabled={entrants.length < 1}
                   >
                     ⏳ Start Countdown
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    loading={actionLoading === 'test_entrants'}
+                    onClick={addTestEntrants}
+                    disabled={entrants.length >= race.maxEntries}
+                  >
+                    🤖 Add Test Entrants
                   </Button>
                   <Button
                     variant="secondary"
