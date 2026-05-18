@@ -158,13 +158,19 @@ export default function MarbleRaceScene3D({
   useEffect(() => { onCompleteRef.current = onRaceComplete; }, [onRaceComplete]);
   useEffect(() => { onPosRef.current = onPositionUpdate; }, [onPositionUpdate]);
 
-  // Physics unpauses when gateOpen=true (handled in MarbleRaceGame via Physics paused prop)
   useEffect(() => {
     if (gateOpen) {
+      // Nudge every marble so none can sit perfectly balanced on a peg
+      marbleRefs.forEach(r => {
+        r.current?.applyImpulse(
+          { x: (Math.random() - 0.5) * 0.4, y: -0.05, z: (Math.random() - 0.5) * 0.1 },
+          true
+        );
+      });
       raceStart.current = Date.now();
       active.current = true;
     }
-  }, [gateOpen]);
+  }, [gateOpen, marbleRefs]);
 
   const endRace = useCallback(() => {
     if (doneCalled.current) return;
