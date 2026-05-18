@@ -9,7 +9,7 @@ interface LobbyProps {
   entrants: Entrant[];
   sessionId: string;
   myEntrantId: string | null;
-  onJoined: (entrantId: string, displayName: string) => void;
+  onJoined: (entrant: Entrant) => void;
 }
 
 export default function Lobby({

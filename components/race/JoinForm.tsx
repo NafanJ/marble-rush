@@ -4,11 +4,12 @@ import { useState, useRef } from 'react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { MAX_IMAGE_SIZE_BYTES, ALLOWED_IMAGE_TYPES } from '@/lib/constants';
+import type { Entrant } from '@/lib/types';
 
 interface JoinFormProps {
   raceId: string;
   sessionId: string;
-  onJoined: (entrantId: string, displayName: string) => void;
+  onJoined: (entrant: Entrant) => void;
   disabled?: boolean;
 }
 
@@ -82,26 +83,24 @@ export default function JoinForm({
         setLoading(false);
         return;
       }
-      const joined = await joinRes.json();
-      const entrantId: string = (joined as { id: string }).id;
+      const entrant = await joinRes.json() as Entrant;
 
       // Upload image if provided
       if (imageFile) {
         const formData = new FormData();
         formData.append('file', imageFile);
         formData.append('raceId', raceId);
-        formData.append('entrantId', entrantId);
+        formData.append('entrantId', entrant.id);
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
         if (!uploadRes.ok) {
-          // Non-fatal — joined without texture
           console.warn('Image upload failed');
         }
       }
 
-      onJoined(entrantId, name.trim());
+      onJoined(entrant);
     } catch {
       setError('Network error. Please try again.');
     } finally {

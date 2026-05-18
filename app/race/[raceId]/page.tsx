@@ -198,12 +198,17 @@ export default function RacePage({ params }: PageProps) {
     return () => { supabase.removeChannel(channel); };
   }, [raceId]);
 
-  const handleJoined = useCallback(async (entrantId: string) => {
-    setMyEntrantId(entrantId);
-    localStorage.setItem(`entrant_${raceId}`, entrantId);
-    // Immediately refresh entrants so the new entry shows with correct field names
+  const handleJoined = useCallback(async (entrant: Entrant) => {
+    setMyEntrantId(entrant.id);
+    localStorage.setItem(`entrant_${raceId}`, entrant.id);
+    // Add immediately from the POST response so the UI updates before the re-fetch
+    setEntrants(prev => prev.some(e => e.id === entrant.id) ? prev : [...prev, entrant]);
+    // Re-fetch for the authoritative list (supabaseAdmin now uses no-store)
     const res = await fetch(`/api/races/${raceId}/entrants`);
-    if (res.ok) setEntrants(await res.json() as Entrant[]);
+    if (res.ok) {
+      const data = await res.json() as Entrant[];
+      if (data.length > 0) setEntrants(data);
+    }
   }, [raceId]);
 
   const handleCountdownComplete = useCallback(() => {
