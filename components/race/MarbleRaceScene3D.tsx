@@ -17,7 +17,6 @@ const MR = 0.35;       // marble radius
 const HW = 4.0;        // track half-width
 const HD = 0.65;       // track half-depth (Z)
 const SPAWN_Y = 1.2;
-const GATE_Y = -0.5;
 const FINISH_Y = -80;
 const FLOOR_Y = FINISH_Y - 2.5;
 const TRACK_H = Math.abs(FLOOR_Y - SPAWN_Y) + 2;
@@ -138,7 +137,6 @@ export default function MarbleRaceScene3D({
   onPositionUpdate,
 }: Props) {
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const gateRef     = useRef<RapierRigidBody>(null);
 
   const marbleRefs = useMemo<React.RefObject<RapierRigidBody>[]>(
     () => entrants.map(() => createRef<RapierRigidBody>()),
@@ -160,14 +158,14 @@ export default function MarbleRaceScene3D({
   useEffect(() => { onCompleteRef.current = onRaceComplete; }, [onRaceComplete]);
   useEffect(() => { onPosRef.current = onPositionUpdate; }, [onPositionUpdate]);
 
-  // Gate: disable physics body directly instead of conditional unmount
+  // Release marbles: enable gravity on each body when race starts
   useEffect(() => {
-    if (gateOpen && gateRef.current) {
-      gateRef.current.setEnabled(false);
+    if (gateOpen) {
+      marbleRefs.forEach(r => r.current?.setGravityScale(1.0, true));
       raceStart.current = Date.now();
       active.current = true;
     }
-  }, [gateOpen]);
+  }, [gateOpen, marbleRefs]);
 
   const endRace = useCallback(() => {
     if (doneCalled.current) return;
@@ -321,14 +319,6 @@ export default function MarbleRaceScene3D({
         </mesh>
       </RigidBody>
 
-      {/* Gate — always rendered; physics disabled via setEnabled(false) when race starts */}
-      <RigidBody ref={gateRef} type="fixed" restitution={0.2} friction={0.5}>
-        <mesh position={[0, GATE_Y, 0]} visible={!gateOpen}>
-          <boxGeometry args={[HW * 2, 0.2, HD * 2]} />
-          <meshStandardMaterial color="#4a1a8e" emissive="#2a0a5e" emissiveIntensity={0.5} />
-        </mesh>
-      </RigidBody>
-
       {/* Pegs */}
       {obstacles.pegs.map((peg, i) => (
         <RigidBody key={`peg-${i}`} type="fixed" restitution={0.65} friction={0.1}>
@@ -395,6 +385,7 @@ export default function MarbleRaceScene3D({
             friction={0.3}
             linearDamping={0.02}
             angularDamping={0.1}
+            gravityScale={0}
           >
             <BallCollider args={[MR]} />
             <mesh castShadow>
