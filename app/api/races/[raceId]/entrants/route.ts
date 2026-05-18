@@ -8,7 +8,8 @@ export async function GET(
   try {
     const entrants = await getEntrantsByRace(params.raceId);
     return NextResponse.json(entrants);
-  } catch {
+  } catch (err) {
+    console.error('[entrants GET]', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

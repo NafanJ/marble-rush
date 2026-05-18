@@ -110,7 +110,22 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'races', filter: `id=eq.${race.id}` },
         (payload: RealtimePostgresChangesPayload<RaceRow>) => {
-          setRace(payload.new as unknown as Race);
+          const row = payload.new as RaceRow;
+          setRace({
+            id: row.id,
+            title: row.title,
+            status: row.status,
+            maxEntries: row.max_entries,
+            entryWindowSeconds: row.entry_window_seconds,
+            speedMultiplier: Number(row.speed_multiplier),
+            trackDifficulty: row.track_difficulty,
+            trackSeed: row.track_seed,
+            raceTimeoutSeconds: row.race_timeout_seconds,
+            awardPoints: row.award_points,
+            createdAt: row.created_at,
+            startedAt: row.started_at,
+            completedAt: row.completed_at,
+          });
         }
       )
       .subscribe();

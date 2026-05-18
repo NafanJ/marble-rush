@@ -22,7 +22,11 @@ export async function getEntrantsByRace(raceId: string): Promise<Entrant[]> {
     .select('*')
     .eq('race_id', raceId)
     .order('marble_number', { ascending: true });
-  if (error || !data) return [];
+  if (error) {
+    console.error('[getEntrantsByRace] Supabase error:', error.message, error.code);
+    return [];
+  }
+  if (!data) return [];
   return (data as EntrantRow[]).map(rowToEntrant);
 }
 

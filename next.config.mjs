@@ -10,16 +10,7 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Phaser uses browser APIs — exclude from server bundle
-      config.externals = config.externals || [];
-      if (Array.isArray(config.externals)) {
-        config.externals.push('phaser');
-      }
-    }
-    return config;
-  },
+  transpilePackages: ['three', '@react-three/fiber', '@react-three/drei', '@react-three/rapier'],
 };
 
 export default nextConfig;

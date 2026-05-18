@@ -89,14 +89,24 @@ export default function RacePage({ params }: PageProps) {
         if (r.status === 'countdown') setShowCountdown(true);
         if (r.status === 'running') setRaceRunning(true);
       }
+      let fetchedEntrants: Entrant[] = [];
       if (entrantsRes.ok) {
-        const e = await entrantsRes.json() as Entrant[];
-        setEntrants(e);
+        fetchedEntrants = await entrantsRes.json() as Entrant[];
+        setEntrants(fetchedEntrants);
       }
 
-      // Restore my entrant ID from localStorage
+      // Restore my entrant ID — localStorage first, then match by session ID
       const storedId = localStorage.getItem(`entrant_${raceId}`);
-      if (storedId) setMyEntrantId(storedId);
+      if (storedId) {
+        setMyEntrantId(storedId);
+      } else {
+        const sid = getSessionId();
+        const mine = fetchedEntrants.find((e) => e.browserSessionId === sid);
+        if (mine) {
+          setMyEntrantId(mine.id);
+          localStorage.setItem(`entrant_${raceId}`, mine.id);
+        }
+      }
 
       // Load results if complete
       if (race?.status === 'complete') {
@@ -118,22 +128,40 @@ export default function RacePage({ params }: PageProps) {
 
   // Realtime subscriptions
   useEffect(() => {
+    async function refreshEntrants() {
+      const res = await fetch(`/api/races/${raceId}/entrants`);
+      if (res.ok) setEntrants(await res.json() as Entrant[]);
+    }
+
     const channel = supabase
       .channel(`race-${raceId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'races', filter: `id=eq.${raceId}` },
         (payload: RealtimePostgresChangesPayload<RaceRow>) => {
-          const updated = payload.new as unknown as Race;
+          // Supabase realtime payloads use snake_case DB columns — map manually
+          const row = payload.new as RaceRow;
+          const updated: Race = {
+            id: row.id,
+            title: row.title,
+            status: row.status,
+            maxEntries: row.max_entries,
+            entryWindowSeconds: row.entry_window_seconds,
+            speedMultiplier: Number(row.speed_multiplier),
+            trackDifficulty: row.track_difficulty,
+            trackSeed: row.track_seed,
+            raceTimeoutSeconds: row.race_timeout_seconds,
+            awardPoints: row.award_points,
+            createdAt: row.created_at,
+            startedAt: row.started_at,
+            completedAt: row.completed_at,
+          };
           setRace(updated);
           if (updated.status === 'countdown') setShowCountdown(true);
           if (updated.status === 'running') {
             setShowCountdown(false);
             setRaceRunning(true);
-            // Open gate when running status detected
-            setTimeout(() => {
-              gameRef.current?.startRace();
-            }, 500);
+            setTimeout(() => { gameRef.current?.startRace(); }, 500);
           }
           if (updated.status === 'complete') {
             setRaceRunning(false);
@@ -143,20 +171,14 @@ export default function RacePage({ params }: PageProps) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'entrants', filter: `race_id=eq.${raceId}` },
-        (payload: RealtimePostgresChangesPayload<EntrantRow>) => {
-          setEntrants((prev) => {
-            const newRow = payload.new as unknown as Entrant;
-            const exists = prev.find((e) => e.id === newRow.id);
-            if (exists) return prev;
-            return [...prev, newRow];
-          });
-        }
+        () => { refreshEntrants(); }
       )
       .on(
         'postgres_changes',
         { event: 'DELETE', schema: 'public', table: 'entrants' },
         (payload: RealtimePostgresChangesPayload<EntrantRow>) => {
-          setEntrants((prev) => prev.filter((e) => e.id !== (payload.old as unknown as Entrant).id));
+          const deletedId = (payload.old as EntrantRow).id;
+          setEntrants((prev) => prev.filter((e) => e.id !== deletedId));
         }
       )
       .on(
@@ -176,9 +198,12 @@ export default function RacePage({ params }: PageProps) {
     return () => { supabase.removeChannel(channel); };
   }, [raceId]);
 
-  const handleJoined = useCallback((entrantId: string) => {
+  const handleJoined = useCallback(async (entrantId: string) => {
     setMyEntrantId(entrantId);
     localStorage.setItem(`entrant_${raceId}`, entrantId);
+    // Immediately refresh entrants so the new entry shows with correct field names
+    const res = await fetch(`/api/races/${raceId}/entrants`);
+    if (res.ok) setEntrants(await res.json() as Entrant[]);
   }, [raceId]);
 
   const handleCountdownComplete = useCallback(() => {

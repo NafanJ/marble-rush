@@ -34,7 +34,7 @@ export default function RootLayout({
                 href="/history"
                 className="text-white/60 hover:text-white transition-colors"
               >
-                History
+                Races
               </a>
               <a
                 href="/admin"
