@@ -1,6 +1,7 @@
 'use client';
 
 import { LeaderboardEntry } from '@/lib/types';
+import Marble from '@/components/ui/Marble';
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
@@ -18,13 +19,15 @@ function formatTime(ms: number | null): string {
   return `${secs}.${millis.toString().padStart(3, '0').slice(0, 2)}s`;
 }
 
-const MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-
 export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
   if (entries.length === 0) {
     return (
       <div className="card p-10 text-center">
-        <div className="text-5xl mb-4">🏆</div>
+        <div className="flex justify-center gap-2 mb-5" aria-hidden>
+          <Marble size={18} color="#ffd24a" />
+          <Marble size={18} color="#3ee6ff" />
+          <Marble size={18} color="#ff5ab8" />
+        </div>
         <p className="text-white/40">No races completed yet. Be the first!</p>
       </div>
     );
@@ -55,24 +58,20 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                   key={entry.id}
                   className={`border-b border-white/5 transition-colors hover:bg-white/5 ${
                     rank === 1
-                      ? 'bg-yellow-400/5'
+                      ? 'bg-neon-gold/[0.05]'
                       : rank === 2
-                      ? 'bg-gray-400/5'
+                      ? 'bg-slate-300/[0.04]'
                       : rank === 3
-                      ? 'bg-orange-600/5'
+                      ? 'bg-orange-500/[0.04]'
                       : ''
                   }`}
                 >
                   <td className="px-4 py-3">
-                    {isTop3 ? (
-                      <span className="text-lg">{MEDALS[rank]}</span>
-                    ) : (
-                      <span className="text-white/30 font-mono">{rank}</span>
-                    )}
+                    <span className={`rank-chip ${isTop3 ? `rank-${rank}` : ''}`}>{rank}</span>
                   </td>
                   <td className="px-4 py-3 font-semibold">{entry.displayName}</td>
                   <td className="px-4 py-3 text-right">
-                    <span className="font-bold text-yellow-400">
+                    <span className="num font-bold text-neon-gold">
                       {entry.totalPoints.toLocaleString()}
                     </span>
                   </td>
@@ -90,7 +89,7 @@ export default function LeaderboardTable({ entries }: LeaderboardTableProps) {
                       ? entry.averageFinishPosition.toFixed(1)
                       : '—'}
                   </td>
-                  <td className="px-4 py-3 text-right hidden lg:table-cell text-white/40 font-mono text-xs">
+                  <td className="px-4 py-3 text-right hidden lg:table-cell text-white/40 num text-xs">
                     {formatTime(entry.fastestFinishTimeMs)}
                   </td>
                 </tr>

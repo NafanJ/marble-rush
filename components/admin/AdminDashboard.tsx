@@ -281,8 +281,7 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
       {/* No race state */}
       {!race && (
         <div className="card p-10 text-center">
-          <div className="text-5xl mb-4">🏁</div>
-          <h2 className="text-xl font-bold mb-2">No Active Race</h2>
+          <h2 className="display text-xl font-bold mb-2">No Active Race</h2>
           <p className="text-white/40 mb-6">Create a race to get started</p>
           <Button variant="primary" onClick={() => setShowCreateModal(true)}>
             + Create Race
@@ -341,7 +340,7 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
                     onClick={() => changeStatus('countdown')}
                     disabled={entrants.length < 1}
                   >
-                    🏁 Start Race!
+                    Start race
                   </Button>
                   <Button
                     variant="secondary"
@@ -464,6 +463,7 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
           results={results}
           entrants={entrants}
           raceTitle={race.title}
+          isAdmin
           onNewRace={() => {
             setResults(null);
             setRace(null);

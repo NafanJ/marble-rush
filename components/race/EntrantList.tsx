@@ -2,6 +2,8 @@
 
 import { useMemo } from 'react';
 import { Entrant, MarblePosition } from '@/lib/types';
+import Marble from '@/components/ui/Marble';
+import Icon from '@/components/ui/Icon';
 
 interface EntrantListProps {
   entrants: Entrant[];
@@ -14,8 +16,6 @@ interface EntrantListProps {
   trackedId?: string | null;
   onTrack?: (id: string | null) => void;
 }
-
-const RANK_MEDALS: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 export default function EntrantList({
   entrants,
@@ -49,10 +49,10 @@ export default function EntrantList({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-white/80 text-sm">
-          {isRacing ? 'Live Standings' : 'Entered Marbles'}
+        <h3 className="eyebrow">
+          {isRacing ? 'Live standings' : 'Entered marbles'}
         </h3>
-        <span className="text-sm text-white/40">{entrants.length} / {maxEntries}</span>
+        <span className="num text-xs text-white/40">{entrants.length}/{maxEntries}</span>
       </div>
 
       {entrants.length === 0 ? (
@@ -64,7 +64,6 @@ export default function EntrantList({
           {sorted.map((entrant, rank) => {
             const isHighlight = entrant.id === highlightId;
             const isTracked   = entrant.id === trackedId;
-            const medal       = isRacing ? (RANK_MEDALS[rank + 1] ?? null) : null;
             const rankNum     = rank + 1;
 
             return (
@@ -75,48 +74,43 @@ export default function EntrantList({
                   onTrack ? 'cursor-pointer' : ''
                 } ${
                   isTracked
-                    ? 'bg-yellow-500/15 border border-yellow-500/50'
+                    ? 'bg-neon-gold/10 border border-neon-gold/40'
                     : isHighlight
-                    ? 'bg-purple-600/20 border border-purple-500/40'
-                    : 'bg-white/5 border border-white/5 hover:border-white/15'
+                    ? 'bg-neon-violet/15 border border-neon-violet/40'
+                    : 'bg-white/[0.04] border border-white/5 hover:border-white/15'
                 }`}
               >
-                {/* Rank / medal */}
-                {isRacing ? (
-                  <span className="text-xs w-6 text-center flex-shrink-0">
-                    {medal ?? <span className="text-white/30">#{rankNum}</span>}
-                  </span>
-                ) : (
-                  <span className="text-white/30 text-xs w-5 text-center flex-shrink-0">
-                    #{entrant.marbleNumber}
-                  </span>
-                )}
-
-                {/* Colour dot */}
+                {/* Rank */}
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: entrant.colour }}
-                />
+                  className={`rank-chip !w-6 !h-6 !text-[0.7rem] ${
+                    isRacing && rankNum <= 3 ? `rank-${rankNum}` : ''
+                  }`}
+                >
+                  {isRacing ? rankNum : entrant.marbleNumber}
+                </span>
+
+                {/* Marble avatar */}
+                <Marble size={14} color={entrant.colour} />
 
                 {/* Name */}
                 <span className="flex-1 text-sm font-medium truncate">
                   {entrant.displayName}
                   {isHighlight && (
-                    <span className="ml-1 text-xs text-purple-400">(you)</span>
+                    <span className="ml-1 text-xs text-neon-violet">(you)</span>
                   )}
                 </span>
 
                 {/* Camera / tracking icon */}
                 {isTracked && (
-                  <span className="text-yellow-400 text-xs flex-shrink-0" title="Camera following">
-                    📷
+                  <span className="text-neon-gold flex-shrink-0" title="Camera following">
+                    <Icon name="eye" size={13} />
                   </span>
                 )}
 
                 {/* Custom texture indicator */}
                 {entrant.marbleTextureUrl && (
-                  <span className="text-xs text-cyan-400 flex-shrink-0" title="Custom marble">
-                    🎨
+                  <span className="text-neon-cyan flex-shrink-0" title="Custom marble">
+                    <Icon name="sparkle" size={12} />
                   </span>
                 )}
 
@@ -124,10 +118,10 @@ export default function EntrantList({
                 {isAdmin && onRemove && (
                   <button
                     onClick={e => { e.stopPropagation(); onRemove(entrant.id); }}
-                    className="text-white/20 hover:text-red-400 transition-colors text-xs flex-shrink-0 p-1"
+                    className="text-white/20 hover:text-red-400 transition-colors flex-shrink-0 p-1"
                     title="Remove entrant"
                   >
-                    ✕
+                    <Icon name="x" size={12} />
                   </button>
                 )}
               </div>
@@ -141,7 +135,7 @@ export default function EntrantList({
         <div className="mt-3">
           <div className="h-1 bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-purple-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-neon-violet to-neon-cyan rounded-full transition-all duration-500"
               style={{ width: `${Math.min(100, (entrants.length / maxEntries) * 100)}%` }}
             />
           </div>

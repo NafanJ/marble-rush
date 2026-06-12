@@ -21,26 +21,24 @@ export default function Countdown({ onComplete }: CountdownProps) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="text-center">
-        <p className="text-white/50 text-lg mb-6 tracking-widest uppercase font-medium">
-          Race Starting
-        </p>
+        <p className="eyebrow !text-sm mb-6">Race starting</p>
         <div className="relative w-48 h-48 flex items-center justify-center">
           {/* Pulsing ring */}
-          <div className="absolute inset-0 rounded-full border-4 border-purple-500/30 animate-ping" />
-          <div className="absolute inset-4 rounded-full border-2 border-purple-500/50" />
+          <div className="absolute inset-0 rounded-full border-4 border-neon-violet/30 animate-ping" />
+          <div className="absolute inset-4 rounded-full border-2 border-neon-violet/50" />
 
           {/* Countdown number */}
           {count > 0 ? (
             <span
               key={count}
-              className="count-pop text-9xl font-extrabold logo-gradient"
+              className="display count-pop text-9xl font-extrabold logo-gradient"
             >
               {count}
             </span>
           ) : (
             <span
               key="go"
-              className="count-pop text-6xl font-extrabold text-green-400"
+              className="display count-pop text-6xl font-extrabold text-neon-green"
             >
               GO!
             </span>

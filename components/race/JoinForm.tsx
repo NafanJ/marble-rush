@@ -3,6 +3,8 @@
 import { useState, useRef } from 'react';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import Marble from '../ui/Marble';
+import Icon from '../ui/Icon';
 import { MAX_IMAGE_SIZE_BYTES, ALLOWED_IMAGE_TYPES } from '@/lib/constants';
 import type { Entrant } from '@/lib/types';
 
@@ -156,14 +158,14 @@ export default function JoinForm({
               className="w-12 h-12 rounded-full bg-white/10 border-2 border-dashed border-white/20 flex items-center justify-center cursor-pointer hover:border-white/40 transition-colors"
               onClick={() => fileRef.current?.click()}
             >
-              <span className="text-xl">🔮</span>
+              <Marble size={22} color="#3ee6ff" />
             </div>
           )}
           <div className="flex-1">
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+              className="text-sm text-neon-violet hover:text-white transition-colors"
               disabled={disabled || loading}
             >
               {imageFile ? 'Change image' : 'Upload image'}
@@ -200,7 +202,7 @@ export default function JoinForm({
         disabled={disabled || !!nameError || name.trim().length < 2}
         className="w-full"
       >
-        🔮 Enter Race
+        <Icon name="play" size={16} /> Enter race
       </Button>
     </form>
   );

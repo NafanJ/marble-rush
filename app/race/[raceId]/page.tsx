@@ -239,11 +239,10 @@ export default function RacePage({ params }: PageProps) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center text-center px-4">
         <div>
-          <div className="text-5xl mb-4">❌</div>
-          <h2 className="text-xl font-bold mb-2">Race Not Found</h2>
+          <h2 className="display text-xl font-bold mb-2">Race not found</h2>
           <p className="text-white/40 mb-6">This race doesn&apos;t exist or has been deleted.</p>
-          <a href="/" className="text-purple-400 hover:text-purple-300">
-            ← Back to home
+          <a href="/" className="text-neon-violet hover:text-white transition-colors">
+            Back to home
           </a>
         </div>
       </div>
@@ -267,8 +266,8 @@ export default function RacePage({ params }: PageProps) {
       {race.status === 'draft' && (
         <div className="min-h-[70vh] flex items-center justify-center text-center px-4">
           <div className="card p-10 max-w-sm">
-            <div className="text-5xl mb-4">🔧</div>
-            <h2 className="text-xl font-bold mb-2">{race.title}</h2>
+            <span className="pill pill-muted mb-4">Being set up</span>
+            <h2 className="display text-xl font-bold mb-2">{race.title}</h2>
             <p className="text-white/40">This race is being set up. Check back soon!</p>
           </div>
         </div>
@@ -278,11 +277,11 @@ export default function RacePage({ params }: PageProps) {
       {race.status === 'cancelled' && (
         <div className="min-h-[70vh] flex items-center justify-center text-center px-4">
           <div className="card p-10 max-w-sm">
-            <div className="text-5xl mb-4">🚫</div>
-            <h2 className="text-xl font-bold mb-2">Race Cancelled</h2>
+            <span className="pill pill-muted mb-4">Cancelled</span>
+            <h2 className="display text-xl font-bold mb-2">Race cancelled</h2>
             <p className="text-white/40 mb-4">{race.title} was cancelled.</p>
-            <a href="/" className="text-purple-400 hover:text-purple-300 text-sm">
-              ← Back to home
+            <a href="/" className="text-neon-violet hover:text-white transition-colors text-sm">
+              Back to home
             </a>
           </div>
         </div>
@@ -349,10 +348,9 @@ export default function RacePage({ params }: PageProps) {
       {/* Complete — results fetched but empty (race ended without physics results) */}
       {race.status === 'complete' && results !== null && results.length === 0 && (
         <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 text-white/60">
-          <div className="text-5xl">🏁</div>
-          <p className="text-lg font-semibold text-white">Race Complete</p>
+          <p className="display text-lg font-semibold text-white">Race complete</p>
           <p className="text-sm">No results were recorded for this race.</p>
-          <a href="/" className="mt-4 px-6 py-3 bg-purple-600 hover:bg-purple-500 rounded-xl text-white font-semibold transition-colors">
+          <a href="/" className="btn btn-primary mt-4">
             Back to Home
           </a>
         </div>

@@ -3,6 +3,7 @@
 import { Race, Entrant } from '@/lib/types';
 import JoinForm from './JoinForm';
 import EntrantList from './EntrantList';
+import Marble from '@/components/ui/Marble';
 
 interface LobbyProps {
   race: Race;
@@ -26,22 +27,21 @@ export default function Lobby({
     <div className="max-w-2xl mx-auto px-4 py-8">
       {/* Race header */}
       <div className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-full px-4 py-1.5 text-green-400 text-sm font-medium mb-4">
-          <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-          Entries Open
-        </div>
-        <h1 className="text-3xl font-extrabold mb-2">{race.title}</h1>
-        <div className="flex items-center justify-center gap-4 text-sm text-white/50">
-          <span>🎯 Max {race.maxEntries} marbles</span>
-          <span>·</span>
+        <span className="pill pill-open mb-4">
+          <span className="pill-dot" />
+          Entries open
+        </span>
+        <h1 className="display text-3xl font-extrabold mb-3">{race.title}</h1>
+        <div className="flex items-center justify-center gap-2 text-sm text-white/45">
+          <span>Max {race.maxEntries} marbles</span>
+          <span className="text-white/20">·</span>
           <span>
-            🌊{' '}
             {race.trackDifficulty.charAt(0).toUpperCase() +
               race.trackDifficulty.slice(1)}{' '}
             track
           </span>
-          <span>·</span>
-          <span>⚡ {race.speedMultiplier}× speed</span>
+          <span className="text-white/20">·</span>
+          <span>{race.speedMultiplier}× speed</span>
         </div>
       </div>
 
@@ -50,8 +50,14 @@ export default function Lobby({
         <div className="card p-6">
           {alreadyJoined ? (
             <div className="text-center py-4">
-              <div className="text-4xl mb-3">✅</div>
-              <h3 className="text-lg font-bold mb-1">You&apos;re In!</h3>
+              <div className="flex justify-center mb-4">
+                {entrants
+                  .filter((e) => e.id === myEntrantId)
+                  .map((e) => (
+                    <Marble key={e.id} size={44} color={e.colour} className="animate-float" />
+                  ))}
+              </div>
+              <h3 className="display text-lg font-bold mb-1">You&apos;re in!</h3>
               <p className="text-white/50 text-sm">
                 Waiting for the admin to start the race...
               </p>
@@ -59,20 +65,14 @@ export default function Lobby({
                 {entrants
                   .filter((e) => e.id === myEntrantId)
                   .map((e) => (
-                    <span key={e.id} className="flex items-center gap-2 text-sm">
-                      <span
-                        className="marble-dot"
-                        style={{ backgroundColor: e.colour }}
-                      />
-                      <span className="font-medium">{e.displayName}</span>
-                    </span>
+                    <span key={e.id} className="font-semibold text-sm">{e.displayName}</span>
                   ))}
               </div>
-              <div className="mt-4 flex justify-center gap-1">
+              <div className="mt-4 flex justify-center gap-1.5">
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
-                    className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
+                    className="w-1.5 h-1.5 bg-neon-violet rounded-full animate-bounce"
                     style={{ animationDelay: `${i * 0.15}s` }}
                   />
                 ))}
@@ -80,15 +80,15 @@ export default function Lobby({
             </div>
           ) : isFull ? (
             <div className="text-center py-4">
-              <div className="text-4xl mb-3">🚫</div>
-              <h3 className="text-lg font-bold mb-1">Race Full</h3>
+              <span className="pill pill-muted mb-3">Race full</span>
+              <h3 className="display text-lg font-bold mb-1 mt-2">All spots taken</h3>
               <p className="text-white/50 text-sm">
                 All {race.maxEntries} spots are taken. Watch the race below!
               </p>
             </div>
           ) : (
             <>
-              <h2 className="text-lg font-bold mb-4">Join the Race</h2>
+              <h2 className="display text-lg font-bold mb-4">Join the race</h2>
               <JoinForm
                 raceId={race.id}
                 sessionId={sessionId}

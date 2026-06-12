@@ -73,9 +73,9 @@ export default function RaceForm({ onSubmit, onCancel }: RaceFormProps) {
               })
             }
           >
-            <option value="easy">😌 Easy</option>
-            <option value="normal">⚡ Normal</option>
-            <option value="chaos">🌀 Chaos</option>
+            <option value="easy">Easy</option>
+            <option value="normal">Normal</option>
+            <option value="chaos">Chaos</option>
           </select>
         </div>
       </div>
@@ -144,7 +144,7 @@ export default function RaceForm({ onSubmit, onCancel }: RaceFormProps) {
           Cancel
         </Button>
         <Button type="submit" variant="primary" loading={loading} className="flex-1">
-          🏁 Create Race
+          Create race
         </Button>
       </div>
     </form>

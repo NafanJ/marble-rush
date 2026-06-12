@@ -3,12 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --bg: #06060f;
-  --card: rgba(255, 255, 255, 0.05);
-  --border: rgba(255, 255, 255, 0.1);
-  --purple: #7c3aed;
-  --cyan: #06b6d4;
-  --yellow: #facc15;
+  --bg: #05050e;
+  --surface: rgba(255, 255, 255, 0.04);
+  --surface-strong: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --gold: #ffd24a;
+  --cyan: #3ee6ff;
+  --pink: #ff5ab8;
+  --green: #3dffa2;
+  --violet: #8b7cff;
 }
 
 * {
@@ -21,10 +25,36 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  background: #06060f;
   color: white;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Background lives on html only: the fixed .backdrop layer has z-index -1,
+   which paints behind body's background but in front of html's */
+html {
+  background: var(--bg);
+}
+
+/* Page backdrop: soft glows + faint pachinko peg grid */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(820px 420px at 18% -8%, rgba(139, 124, 255, 0.13), transparent 65%),
+    radial-gradient(700px 380px at 85% 8%, rgba(62, 230, 255, 0.07), transparent 65%),
+    radial-gradient(900px 500px at 50% 115%, rgba(255, 90, 184, 0.06), transparent 65%);
+}
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.055) 1.5px, transparent 1.5px);
+  background-size: 36px 36px;
+  background-position: 0 0, 18px 18px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.25) 45%, transparent 80%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.25) 45%, transparent 80%);
 }
 
 /* Scrollbar */
@@ -32,38 +62,271 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.5);
+  background: rgba(139, 124, 255, 0.45);
   border-radius: 3px;
 }
 
-/* Marble gradient logo text */
+/* ── Type helpers ─────────────────────────────────────────── */
+
+.display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: -0.01em;
+}
+
 .logo-gradient {
-  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+  background: linear-gradient(120deg, #8b7cff 0%, #3ee6ff 55%, #3dffa2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Glowing card */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.num {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Surfaces ─────────────────────────────────────────────── */
+
 .card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.055) 0%, rgba(255, 255, 255, 0.025) 100%);
+  border: 1px solid var(--border);
   border-radius: 1rem;
 }
 
-/* Neon glow for accents */
-.glow-purple {
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.4);
+.card-hover {
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  border-color: var(--border-strong);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  transform: translateY(-1px);
 }
 
+.glow-violet {
+  box-shadow: 0 0 28px rgba(139, 124, 255, 0.22);
+}
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+  box-shadow: 0 0 28px rgba(62, 230, 255, 0.2);
 }
 
-/* Countdown number animation */
+/* ── Buttons ──────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  border-radius: 0.875rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  line-height: 1;
+  transition: all 0.18s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #8b7cff 0%, #6d5ce6 100%);
+  color: white;
+  box-shadow: 0 4px 24px rgba(139, 124, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn-primary:hover:not(:disabled) {
+  box-shadow: 0 6px 32px rgba(139, 124, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+.btn-gold {
+  background: linear-gradient(135deg, #ffd24a 0%, #f0a818 100%);
+  color: #1a1200;
+  box-shadow: 0 4px 24px rgba(255, 210, 74, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.btn-gold:hover:not(:disabled) {
+  box-shadow: 0 6px 32px rgba(255, 210, 74, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: white;
+}
+.btn-danger {
+  background: rgba(244, 63, 94, 0.14);
+  border-color: rgba(244, 63, 94, 0.35);
+  color: #fda4af;
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(244, 63, 94, 0.22);
+}
+
+/* ── Inputs ───────────────────────────────────────────────── */
+
+.input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  padding: 0.7rem 1rem;
+  font-size: 0.9375rem;
+  color: white;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+.input:focus {
+  outline: none;
+  border-color: rgba(139, 124, 255, 0.6);
+  box-shadow: 0 0 0 3px rgba(139, 124, 255, 0.15);
+}
+
+/* ── Marble sphere (the brand mark, in any colour/size) ───── */
+
+.marble {
+  --marble-color: #8b7cff;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 22%),
+    radial-gradient(circle at 36% 32%, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 62% 72%, rgba(0, 0, 0, 0.42) 0%, rgba(0, 0, 0, 0) 55%),
+    radial-gradient(circle at 50% 50%, var(--marble-color) 0%, color-mix(in srgb, var(--marble-color) 60%, #000) 100%);
+  box-shadow:
+    inset 0 -2px 6px rgba(0, 0, 0, 0.45),
+    inset 0 2px 4px rgba(255, 255, 255, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Small colour dot used in lists (kept for compatibility) */
+.marble-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+}
+
+/* ── Rank chips (podium metals + neutral) ─────────────────── */
+
+.rank-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+.rank-1 {
+  background: linear-gradient(135deg, #ffe9a8 0%, #f0a818 100%);
+  border-color: rgba(255, 210, 74, 0.6);
+  color: #3d2b00;
+  box-shadow: 0 0 14px rgba(255, 210, 74, 0.35);
+}
+.rank-2 {
+  background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
+  border-color: rgba(203, 213, 225, 0.5);
+  color: #1e293b;
+}
+.rank-3 {
+  background: linear-gradient(135deg, #fbc8a2 0%, #c2632a 100%);
+  border-color: rgba(234, 136, 70, 0.5);
+  color: #3b1c05;
+}
+
+/* Podium row tints for results */
+.podium-1 {
+  background: linear-gradient(135deg, rgba(255, 210, 74, 0.14) 0%, rgba(255, 210, 74, 0.03) 100%);
+  border-color: rgba(255, 210, 74, 0.35);
+}
+.podium-2 {
+  background: linear-gradient(135deg, rgba(203, 213, 225, 0.12) 0%, rgba(203, 213, 225, 0.03) 100%);
+  border-color: rgba(203, 213, 225, 0.3);
+}
+.podium-3 {
+  background: linear-gradient(135deg, rgba(234, 136, 70, 0.13) 0%, rgba(234, 136, 70, 0.03) 100%);
+  border-color: rgba(234, 136, 70, 0.32);
+}
+
+/* ── Status pill ──────────────────────────────────────────── */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid;
+}
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pill-live {
+  color: var(--cyan);
+  border-color: rgba(62, 230, 255, 0.35);
+  background: rgba(62, 230, 255, 0.08);
+}
+.pill-live .pill-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+.pill-open {
+  color: var(--green);
+  border-color: rgba(61, 255, 162, 0.35);
+  background: rgba(61, 255, 162, 0.08);
+}
+.pill-open .pill-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+.pill-soon {
+  color: var(--gold);
+  border-color: rgba(255, 210, 74, 0.35);
+  background: rgba(255, 210, 74, 0.08);
+}
+.pill-muted {
+  color: rgba(255, 255, 255, 0.45);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Countdown ────────────────────────────────────────────── */
+
 @keyframes countPop {
   0% {
     transform: scale(0.3) rotate(-10deg);
@@ -81,30 +344,6 @@ body {
 
 .count-pop {
   animation: countPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-/* Podium effect for results */
-.podium-1 {
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.2) 0%, rgba(250, 204, 21, 0.05) 100%);
-  border-color: rgba(250, 204, 21, 0.4);
-}
-.podium-2 {
-  background: linear-gradient(135deg, rgba(156, 163, 175, 0.2) 0%, rgba(156, 163, 175, 0.05) 100%);
-  border-color: rgba(156, 163, 175, 0.4);
-}
-.podium-3 {
-  background: linear-gradient(135deg, rgba(234, 88, 12, 0.2) 0%, rgba(234, 88, 12, 0.05) 100%);
-  border-color: rgba(234, 88, 12, 0.4);
-}
-
-/* Marble color dot */
-.marble-dot {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  display: inline-block;
-  flex-shrink: 0;
-  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.3);
 }
 
 /* Phaser canvas wrapper */

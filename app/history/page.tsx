@@ -2,6 +2,7 @@ import { listRaces } from '@/lib/db/races';
 import { getResultsByRace } from '@/lib/db/results';
 import { Race } from '@/lib/types';
 import Link from 'next/link';
+import Icon from '@/components/ui/Icon';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,41 +23,35 @@ function formatTime(ms: number | null): string {
   return `${secs}.${millis.toString().padStart(3, '0').slice(0, 2)}s`;
 }
 
-const POSITION_EMOJI: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' };
-
-const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string; icon: string }> = {
-  entries_open: { label: 'Entries Open', color: 'text-green-400', dot: 'bg-green-400', icon: '🟢' },
-  countdown:    { label: 'Starting Soon', color: 'text-yellow-400', dot: 'bg-yellow-400', icon: '⏳' },
-  running:      { label: 'In Progress',   color: 'text-blue-400',   dot: 'bg-blue-400',   icon: '🔵' },
-  complete:     { label: 'Complete',      color: 'text-purple-400', dot: 'bg-purple-400', icon: '🏁' },
-  draft:        { label: 'Draft',         color: 'text-white/40',   dot: 'bg-white/40',   icon: '🔧' },
+const STATUS_PILL: Record<string, { label: string; cls: string }> = {
+  entries_open: { label: 'Entries open', cls: 'pill-open' },
+  countdown: { label: 'Starting soon', cls: 'pill-soon' },
+  running: { label: 'In progress', cls: 'pill-live' },
+  draft: { label: 'Draft', cls: 'pill-muted' },
 };
 
 function ActiveRaceRow({ race }: { race: Race }) {
-  const cfg = STATUS_CONFIG[race.status];
+  const pill = STATUS_PILL[race.status] ?? { label: race.status, cls: 'pill-muted' };
   const isOpen = race.status === 'entries_open';
   return (
     <Link
       href={`/race/${race.id}`}
-      className="card flex items-center justify-between px-5 py-4 hover:bg-white/10 transition-colors group border border-white/10"
+      className="card card-hover flex items-center justify-between px-5 py-4 group"
     >
-      <div className="flex items-center gap-3">
-        <span className="text-xl">{cfg?.icon ?? '🏁'}</span>
-        <div>
-          <p className="font-bold group-hover:text-purple-300 transition-colors">{race.title}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg?.dot ?? ''} ${isOpen ? 'animate-pulse' : ''}`} />
-            <span className={`text-xs font-medium ${cfg?.color ?? 'text-white/50'}`}>{cfg?.label ?? race.status}</span>
-            <span className="text-xs text-white/30">· {race.trackDifficulty} track · {race.speedMultiplier}× speed</span>
-          </div>
+      <div>
+        <p className="font-bold group-hover:text-neon-violet transition-colors">{race.title}</p>
+        <div className="flex items-center gap-2.5 mt-1.5">
+          <span className={`pill ${pill.cls}`}>
+            <span className="pill-dot" />
+            {pill.label}
+          </span>
+          <span className="text-xs text-white/30">
+            {race.trackDifficulty} track · {race.speedMultiplier}× speed
+          </span>
         </div>
       </div>
-      <span className={`text-sm font-semibold px-4 py-1.5 rounded-full transition-colors ${
-        isOpen
-          ? 'bg-green-500/20 text-green-400 group-hover:bg-green-500/30'
-          : 'bg-white/10 text-white/60 group-hover:bg-white/20'
-      }`}>
-        {isOpen ? '🔮 Join' : '👀 Watch'} →
+      <span className={`btn ${isOpen ? 'btn-gold' : 'btn-ghost'} px-4 py-2 text-sm`}>
+        {isOpen ? 'Join' : 'Watch'} <Icon name="arrowRight" size={14} />
       </span>
     </Link>
   );
@@ -78,19 +73,19 @@ export default async function HistoryPage() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <div className="text-center mb-10">
-        <div className="text-6xl mb-4">📜</div>
-        <h1 className="text-4xl font-extrabold logo-gradient mb-2">All Races</h1>
-        <p className="text-white/50">Find an open race to join, or browse past results</p>
+    <div className="max-w-4xl mx-auto px-4 py-14">
+      <div className="text-center mb-12">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-neon-cyan/10 border border-neon-cyan/25 text-neon-cyan mb-5">
+          <Icon name="flag" size={26} />
+        </div>
+        <h1 className="display text-4xl font-extrabold mb-3">All Races</h1>
+        <p className="text-white/45">Find an open race to join, or browse past results</p>
       </div>
 
       {/* Active / open races */}
       {activeRaces.length > 0 && (
         <section className="mb-10">
-          <h2 className="text-sm font-semibold text-white/40 uppercase tracking-widest mb-3">
-            Active Races
-          </h2>
+          <h2 className="eyebrow mb-3">Active races</h2>
           <div className="space-y-2">
             {activeRaces.map((race) => (
               <ActiveRaceRow key={race.id} race={race} />
@@ -102,16 +97,14 @@ export default async function HistoryPage() {
       {/* Completed races */}
       {completedWithResults.length > 0 && (
         <section>
-          <h2 className="text-sm font-semibold text-white/40 uppercase tracking-widest mb-3">
-            Completed Races
-          </h2>
+          <h2 className="eyebrow mb-3">Completed races</h2>
           <div className="space-y-4">
             {completedWithResults.map(({ race, results, total }) => (
-              <div key={race.id} className="card p-6 hover:border-white/20 transition-colors">
+              <div key={race.id} className="card card-hover p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-bold">{race.title}</h3>
-                    <p className="text-sm text-white/40 mt-0.5">
+                    <p className="text-sm text-white/35 mt-0.5">
                       {race.completedAt ? formatDate(race.completedAt) : 'Unknown date'}
                       {' · '}
                       {total} entrant{total !== 1 ? 's' : ''}
@@ -121,9 +114,9 @@ export default async function HistoryPage() {
                   </div>
                   <Link
                     href={`/race/${race.id}`}
-                    className="text-xs text-purple-400 hover:text-purple-300"
+                    className="flex items-center gap-1 text-xs text-neon-violet hover:text-white transition-colors"
                   >
-                    View →
+                    View <Icon name="arrowRight" size={12} />
                   </Link>
                 </div>
 
@@ -131,21 +124,15 @@ export default async function HistoryPage() {
                   {results.map((result) => (
                     <div
                       key={result.id}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                        result.position === 1
-                          ? 'bg-yellow-400/10 border border-yellow-400/20'
-                          : result.position === 2
-                          ? 'bg-gray-400/10 border border-gray-400/20'
-                          : 'bg-orange-600/10 border border-orange-600/20'
-                      }`}
+                      className={`card flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm podium-${result.position}`}
                     >
-                      <span>{POSITION_EMOJI[result.position]}</span>
+                      <span className={`rank-chip rank-${result.position}`}>{result.position}</span>
                       <span className="font-semibold">{result.displayName}</span>
-                      <span className="text-white/40 text-xs">{formatTime(result.finishTimeMs)}</span>
+                      <span className="num text-white/40 text-xs">{formatTime(result.finishTimeMs)}</span>
                     </div>
                   ))}
                   {total > 3 && (
-                    <div className="flex items-center px-3 py-2 text-sm text-white/30">
+                    <div className="flex items-center px-2 py-2 text-sm text-white/30">
                       +{total - 3} more
                     </div>
                   )}
@@ -159,8 +146,8 @@ export default async function HistoryPage() {
       {activeRaces.length === 0 && completedWithResults.length === 0 && (
         <div className="card p-10 text-center">
           <p className="text-white/40">No races yet. Ask the admin to create one!</p>
-          <Link href="/" className="mt-4 inline-block text-purple-400 hover:text-purple-300 text-sm">
-            ← Back to home
+          <Link href="/" className="mt-4 inline-flex items-center gap-1.5 text-neon-violet hover:text-white text-sm transition-colors">
+            Back to home
           </Link>
         </div>
       )}
