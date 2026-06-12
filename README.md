@@ -2,6 +2,14 @@
 
 A real-time marble racing game for groups of friends. Physics runs entirely in the browser: a long 2D marble-run track with pachinko and pinball elements, built with Phaser 3 + Matter.js. The admin browser is authoritative for results. Built with Next.js 14, Tailwind CSS, and Supabase.
 
+## Screenshots
+
+| Pachinko peg field | Pinball zone | Final results |
+|---|---|---|
+| ![Marbles bouncing through the pachinko peg field](docs/screenshots/pachinko.png) | ![Bumpers, rotating spinners and slingshot kickers](docs/screenshots/pinball.png) | ![Results modal with finish times and podium](docs/screenshots/results.png) |
+
+The track runs vertically for 4,900px: starting chute → pachinko peg field → funnel → zigzag ramps → speed pads → pinball zone (bumpers, spinners, slingshots) → slalom maze → final straight → finish line. Live standings update in the side panel and the camera follows the leader (or any marble you click).
+
 ## Overview
 
 - Players join a lobby, choose a name, optionally upload a custom marble texture
