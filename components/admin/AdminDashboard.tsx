@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { Race, Entrant, FinishResult, RaceStatus, RaceRow } from '@/lib/types';
+import { Race, Entrant, FinishResult, MarblePosition, RaceStatus, RaceRow } from '@/lib/types';
 import { supabase } from '@/lib/supabase';
 import Button from '../ui/Button';
 import Modal from '../ui/Modal';
@@ -11,8 +11,6 @@ import EntrantList from '../race/EntrantList';
 import Countdown from '../race/Countdown';
 import RaceForm, { RaceFormData } from './RaceForm';
 import ResultsModal from '../race/ResultsModal';
-import type { MarbleRaceGameHandle } from '../race/MarbleRaceGame';
-
 const MarbleRaceGame = dynamic(() => import('../race/MarbleRaceGame'), {
   ssr: false,
   loading: () => (
@@ -53,7 +51,8 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [publicUrl, setPublicUrl] = useState('');
   const [copied, setCopied] = useState(false);
-  const gameRef = useRef<MarbleRaceGameHandle | null>(null);
+  const [trackedEntrantId, setTrackedEntrantId] = useState<string | null>(null);
+  const [positions, setPositions] = useState<MarblePosition[]>([]);
   const raceIdRef = useRef<string | null>(null);
 
   const headers = {
@@ -106,13 +105,6 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
   useEffect(() => {
     if (race?.status === 'countdown') setShowCountdown(true);
     else setShowCountdown(false);
-  }, [race?.status]);
-
-  // Start physics when race transitions to 'running'
-  useEffect(() => {
-    if (race?.status !== 'running') return;
-    const t = setTimeout(() => { gameRef.current?.startRace(); }, 100);
-    return () => clearTimeout(t);
   }, [race?.status]);
 
   // Countdown completion → auto-transition to running
@@ -214,19 +206,17 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
     if (!race) return;
     setActionLoading('test_entrants');
     const names = ['Zippy', 'Blaze', 'Comet', 'Rocket', 'Storm', 'Flash', 'Turbo', 'Nova', 'Spike', 'Dash'];
-    await Promise.all(
-      names.map((name, i) =>
-        fetch('/api/entrants', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            raceId: race.id,
-            displayName: name,
-            browserSessionId: `test-bot-${i}-${Date.now()}`,
-          }),
-        })
-      )
-    );
+    for (let i = 0; i < names.length; i++) {
+      await fetch('/api/entrants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          raceId: race.id,
+          displayName: names[i],
+          browserSessionId: `test-bot-${i}-${Date.now()}`,
+        }),
+      });
+    }
     await fetchEntrants(race.id);
     setActionLoading(null);
   }
@@ -240,6 +230,14 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
       setEntrants((prev) => prev.filter((e) => e.id !== entrantId));
     }
   }
+
+  const handleTrack = useCallback((id: string | null) => {
+    setTrackedEntrantId(id);
+  }, []);
+
+  const handlePositionUpdate = useCallback((pos: MarblePosition[]) => {
+    setPositions(pos);
+  }, []);
 
   const handleRaceComplete = useCallback(async (finishResults: FinishResult[]) => {
     if (!race) return;
@@ -422,11 +420,13 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
             <div className="flex gap-4 items-start">
               <div className="flex-1 card p-4">
                 <MarbleRaceGame
-                  ref={gameRef}
                   race={race}
                   entrants={entrants}
                   isAdmin
+                  started={race.status === 'running'}
+                  trackedEntrantId={trackedEntrantId}
                   onRaceComplete={handleRaceComplete}
+                  onPositionUpdate={handlePositionUpdate}
                 />
               </div>
               <div className="w-56 flex-shrink-0 card p-4">
@@ -435,6 +435,9 @@ export default function AdminDashboard({ adminPassword }: AdminDashboardProps) {
                   maxEntries={race.maxEntries}
                   isAdmin
                   onRemove={removeEntrant}
+                  positions={positions}
+                  trackedId={trackedEntrantId}
+                  onTrack={handleTrack}
                 />
               </div>
             </div>

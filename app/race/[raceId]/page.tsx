@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import { Race, Entrant, FinishResult, MarblePosition, RaceRow, EntrantRow } from '@/lib/types';
@@ -10,7 +10,6 @@ import Countdown from '@/components/race/Countdown';
 import EntrantList from '@/components/race/EntrantList';
 import ResultsModal from '@/components/race/ResultsModal';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import type { MarbleRaceGameHandle } from '@/components/race/MarbleRaceGame';
 
 const MarbleRaceGame = dynamic(
   () => import('@/components/race/MarbleRaceGame'),
@@ -72,7 +71,7 @@ export default function RacePage({ params }: PageProps) {
   const [raceRunning, setRaceRunning] = useState(false);
   const [positions, setPositions] = useState<MarblePosition[]>([]);
   const [results, setResults] = useState<FinishResult[] | null>(null);
-  const gameRef = useRef<MarbleRaceGameHandle | null>(null);
+  const [trackedEntrantId, setTrackedEntrantId] = useState<string | null>(null);
 
   // Load race and entrants
   useEffect(() => {
@@ -215,13 +214,9 @@ export default function RacePage({ params }: PageProps) {
     setRaceRunning(true);
   }, []);
 
-  // Start the race timer/tracking whenever the game canvas becomes visible.
-  // Covers both: local countdown completion and realtime status update.
-  useEffect(() => {
-    if (!raceRunning || showCountdown) return;
-    const t = setTimeout(() => { gameRef.current?.startRace(); }, 50);
-    return () => clearTimeout(t);
-  }, [raceRunning, showCountdown]);
+  const handleTrack = useCallback((id: string | null) => {
+    setTrackedEntrantId(id);
+  }, []);
 
   const handleRaceComplete = useCallback((finishResults: FinishResult[]) => {
     setResults(finishResults);
@@ -319,21 +314,25 @@ export default function RacePage({ params }: PageProps) {
             {/* Game canvas */}
             <div className="flex-1">
               <MarbleRaceGame
-                ref={gameRef}
                 race={race}
                 entrants={entrants}
                 isAdmin={false}
+                started={raceRunning && !showCountdown}
+                trackedEntrantId={trackedEntrantId}
                 onRaceComplete={handleRaceComplete}
                 onPositionUpdate={handlePositionUpdate}
               />
             </div>
 
-            {/* Entrant list — stays visible throughout the race */}
+            {/* Live standings — click any row to follow that marble */}
             <div className="hidden lg:block w-52 flex-shrink-0 card p-4">
               <EntrantList
                 entrants={entrants}
                 maxEntries={race.maxEntries}
                 highlightId={myEntrantId ?? undefined}
+                positions={positions}
+                trackedId={trackedEntrantId}
+                onTrack={handleTrack}
               />
             </div>
           </div>

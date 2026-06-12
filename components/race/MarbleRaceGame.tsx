@@ -1,35 +1,28 @@
 'use client';
 
-import { forwardRef, useImperativeHandle, useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import type { Entrant, FinishResult, MarblePosition, Race } from '@/lib/types';
 import MarbleRaceScene3D from './MarbleRaceScene3D';
 
-export interface MarbleRaceGameHandle {
-  startRace: () => void;
-}
-
 interface Props {
   race: Race;
   entrants: Entrant[];
   isAdmin: boolean;
+  /** Marbles are held frozen at the spawn until this flips true */
+  started: boolean;
+  /** Entrant to follow with the camera (null = follow the leader) */
+  trackedEntrantId?: string | null;
   onRaceComplete: (results: FinishResult[]) => void;
   onPositionUpdate?: (positions: MarblePosition[]) => void;
 }
 
-const MarbleRaceGame = forwardRef<MarbleRaceGameHandle, Props>(function MarbleRaceGame(
-  { race, entrants, onRaceComplete, onPositionUpdate },
-  ref
-) {
-  const [gateOpen, setGateOpen] = useState(false);
-
-  useImperativeHandle(ref, () => ({
-    startRace() {
-      setGateOpen(true);
-    },
-  }));
-
+// Controlled by plain props rather than an imperative ref handle: this
+// component is loaded via next/dynamic, which does not forward refs.
+export default function MarbleRaceGame({
+  race, entrants, started, trackedEntrantId, onRaceComplete, onPositionUpdate,
+}: Props) {
   return (
     <div
       className="w-full max-w-[800px] mx-auto overflow-hidden rounded-xl border border-white/10"
@@ -38,16 +31,19 @@ const MarbleRaceGame = forwardRef<MarbleRaceGameHandle, Props>(function MarbleRa
       <Canvas
         shadows
         gl={{ antialias: true }}
-        camera={{ position: [10, 2, 14], fov: 55 }}
+        camera={{ position: [22, 8, 26], fov: 52 }}
       >
         <Suspense fallback={null}>
-          <Physics gravity={[0, -22 * race.speedMultiplier, 0]} timeStep="vary">
+          {/* Fixed timestep: "vary" lets slow frames take huge physics steps,
+              which tunnels fast marbles through the 0.4-thick ramps */}
+          <Physics gravity={[0, -22 * race.speedMultiplier, 0]}>
             <MarbleRaceScene3D
               entrants={entrants}
-              gateOpen={gateOpen}
+              gateOpen={started}
               trackSeed={race.trackSeed}
               trackDifficulty={race.trackDifficulty}
               raceTimeoutSeconds={race.raceTimeoutSeconds}
+              trackedEntrantId={trackedEntrantId}
               onRaceComplete={onRaceComplete}
               onPositionUpdate={onPositionUpdate}
             />
@@ -56,6 +52,4 @@ const MarbleRaceGame = forwardRef<MarbleRaceGameHandle, Props>(function MarbleRa
       </Canvas>
     </div>
   );
-});
-
-export default MarbleRaceGame;
+}
