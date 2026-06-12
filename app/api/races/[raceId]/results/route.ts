@@ -53,8 +53,24 @@ export async function POST(
       }
     }
 
+    // Drop results for entrants removed mid-race: the simulation keeps
+    // them (frozen roster), but the NOT NULL FK on race_results.entrant_id
+    // would reject the whole batch. Re-rank positions after filtering.
+    const { data: existingEntrants } = await supabaseAdmin
+      .from('entrants')
+      .select('id')
+      .eq('race_id', raceId);
+    const validIds = new Set(((existingEntrants ?? []) as { id: string }[]).map((e) => e.id));
+    const filtered = finishResults
+      .filter((r) => validIds.has(r.entrantId))
+      .map((r, idx) => ({ ...r, position: idx + 1 }));
+
+    if (filtered.length === 0) {
+      return NextResponse.json({ error: 'No valid entrants in results' }, { status: 400 });
+    }
+
     // Insert results
-    const savedResults = await insertResults(raceId, finishResults);
+    const savedResults = await insertResults(raceId, filtered);
 
     // Check if race awards points
     const { data: raceRow } = await supabaseAdmin

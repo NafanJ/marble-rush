@@ -34,13 +34,13 @@ export default function EntrantList({
     return m;
   }, [positions]);
 
-  // Sort by Y ascending (lowest Y = furthest along = leading) when live positions exist
+  // Sort by Y descending (highest Y = furthest down the track = leading) when live positions exist
   const sorted = useMemo(() => {
     if (!positions?.length) return entrants;
     return [...entrants].sort((a, b) => {
-      const ay = posMap.get(a.id) ?? Infinity;
-      const by = posMap.get(b.id) ?? Infinity;
-      return ay - by;
+      const ay = posMap.get(a.id) ?? -Infinity;
+      const by = posMap.get(b.id) ?? -Infinity;
+      return by - ay;
     });
   }, [entrants, positions, posMap]);
 

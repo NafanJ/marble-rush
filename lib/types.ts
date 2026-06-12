@@ -78,15 +78,15 @@ export interface MarblePosition {
 }
 
 export interface TrackObstacle {
-  type: 'peg' | 'wall' | 'ramp' | 'speedpad' | 'bumper' | 'funnel_wall' | 'gate';
+  type: 'peg' | 'wall' | 'ramp' | 'speedpad' | 'bumper' | 'funnel_wall' | 'gate' | 'spinner' | 'slingshot';
   x: number;
   y: number;
   width?: number;
   height?: number;
   angle?: number;
   radius?: number;
-  isSpeedPad?: boolean;
-  isBumper?: boolean;
+  /** Rotation speed in rad/s for spinner obstacles (sign = direction) */
+  spinSpeed?: number;
 }
 
 export interface SceneData {
@@ -95,6 +95,7 @@ export interface SceneData {
   trackDifficulty: TrackDifficulty;
   trackSeed: string;
   speedMultiplier: number;
+  raceTimeoutSeconds: number;
   onRaceComplete: (results: FinishResult[]) => void;
   onPositionUpdate?: (positions: MarblePosition[]) => void;
 }

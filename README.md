@@ -1,6 +1,6 @@
 # Marble Rush
 
-A real-time marble racing game for groups of friends. Physics runs entirely in the browser as a 3D tower built with react-three-fiber + Rapier. The admin browser is authoritative for results. Built with Next.js 14, Tailwind CSS, and Supabase.
+A real-time marble racing game for groups of friends. Physics runs entirely in the browser: a long 2D marble-run track with pachinko and pinball elements, built with Phaser 3 + Matter.js. The admin browser is authoritative for results. Built with Next.js 14, Tailwind CSS, and Supabase.
 
 ## Overview
 
@@ -96,7 +96,7 @@ Marble Rush is designed so that **no skill can influence the outcome**:
 - **Deterministic track layout**: The track layout is seeded (same seed = same obstacles). Track geometry is identical for all simulations.
 - **Random spawn positions**: Marble starting positions are randomly shuffled each race — no marble gets the same slot twice in expectation.
 - **Random micro-forces**: Slow-moving marbles get a tiny random nudge every 500ms. This breaks up pile-ups and ensures even the same seed produces different race outcomes each time.
-- **Physics variance**: Rapier simulations vary slightly by device and timing, adding natural variance.
+- **Physics variance**: Matter.js floating-point calculations vary slightly by frame rate and device, adding natural variance.
 - **Admin authority**: The admin browser's finish order is saved as official. Non-admin viewers run the same simulation locally for visual purposes only.
 
 ## Marble Textures
@@ -156,4 +156,4 @@ Points are only awarded in races where **Award Points** is enabled (default: yes
 - **API routes**: All writes use the Supabase service key (bypasses RLS). Reads use the anon key.
 - **Admin auth**: Password sent in `x-admin-password` header. Not cryptographic — intended for trusted group of friends.
 - **Realtime**: Supabase `postgres_changes` subscriptions on `races`, `entrants`, and `race_results` tables.
-- **3D scene**: `MarbleRaceGame` is loaded dynamically with `ssr: false`; the react-three-fiber canvas and Rapier physics never run server-side.
+- **Phaser**: `MarbleRaceGame` is loaded dynamically with `ssr: false` and imports Phaser at runtime, so the game engine never runs server-side. The track is generated deterministically from the race seed in `TrackGenerator.ts`; sections: starting chute → pachinko peg field → funnel → zigzag ramps → speed pads → pinball zone (bumpers, spinners, slingshots) → slalom maze → final straight → finish.
