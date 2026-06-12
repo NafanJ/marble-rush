@@ -67,6 +67,9 @@ export class MarbleRaceScene extends Phaser.Scene {
   }
 
   preload() {
+    // Request cross-origin images with CORS so drawing them to a canvas
+    // doesn't taint it (Supabase storage sends Access-Control-Allow-Origin: *)
+    this.load.crossOrigin = 'anonymous';
     for (const entrant of this.entrants) {
       if (entrant.marbleTextureUrl) {
         this.load.image(`marble-img-${entrant.id}`, entrant.marbleTextureUrl);
@@ -278,31 +281,44 @@ export class MarbleRaceScene extends Phaser.Scene {
       return this.createMarbleTexture(entrant);
     }
 
-    const rt = this.add.renderTexture(0, 0, size, size);
-    rt.setVisible(false);
+    // Draw the photo through a circular canvas clip. (A GeometryMask
+    // can't be used here: it applies in camera space, not RenderTexture
+    // space, and clipped marbles rendered as partial wedges.)
+    const canvasTex = this.textures.createCanvas(key, size, size);
+    if (!canvasTex) return this.createMarbleTexture(entrant);
+    const ctx = canvasTex.getContext();
+    const src = this.textures.get(imgKey).getSourceImage() as CanvasImageSource & { width: number; height: number };
 
-    const maskGfx = this.make.graphics({ x: 0, y: 0 });
-    maskGfx.fillStyle(0xffffff, 1);
-    maskGfx.fillCircle(rt.x + size / 2, rt.y + size / 2, MARBLE_RADIUS);
-    const mask = maskGfx.createGeometryMask();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, MARBLE_RADIUS, 0, Math.PI * 2);
+    ctx.clip();
+    // cover-fit: crop the shorter axis so the photo fills the circle
+    const s = Math.min(src.width, src.height);
+    ctx.drawImage(src, (src.width - s) / 2, (src.height - s) / 2, s, s, 0, 0, size, size);
 
-    const img = this.add.image(size / 2, size / 2, imgKey);
-    img.setDisplaySize(size, size);
-    img.setMask(mask);
-    rt.draw(img, 0, 0);
-    img.destroy();
-    maskGfx.destroy();
-    mask.destroy();
+    // Sphere shading: darker lower-right, glossy highlight upper-left
+    const shade = ctx.createRadialGradient(size * 0.62, size * 0.7, size * 0.1, size / 2, size / 2, size * 0.6);
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,0,0.4)');
+    ctx.fillStyle = shade;
+    ctx.fillRect(0, 0, size, size);
 
-    const shineGfx = this.add.graphics();
-    shineGfx.fillStyle(0xffffff, 0.35);
-    shineGfx.fillEllipse(size / 2 - MARBLE_RADIUS * 0.28, size / 2 - MARBLE_RADIUS * 0.28, MARBLE_RADIUS * 0.6, MARBLE_RADIUS * 0.4);
-    shineGfx.fillStyle(0xffffff, 0.6);
-    shineGfx.fillCircle(size / 2 - MARBLE_RADIUS * 0.3, size / 2 - MARBLE_RADIUS * 0.3, MARBLE_RADIUS * 0.15);
-    rt.draw(shineGfx, 0, 0);
-    shineGfx.destroy();
-    rt.saveTexture(key);
-    rt.destroy();
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.ellipse(size / 2 - MARBLE_RADIUS * 0.3, size / 2 - MARBLE_RADIUS * 0.35, MARBLE_RADIUS * 0.32, MARBLE_RADIUS * 0.2, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    try {
+      canvasTex.refresh();
+    } catch {
+      // canvas tainted (image served without CORS) — fall back to colour
+      this.textures.remove(key);
+      return this.createMarbleTexture(entrant);
+    }
     return key;
   }
 
