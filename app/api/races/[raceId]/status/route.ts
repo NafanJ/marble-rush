@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateRaceStatus, getRaceById } from '@/lib/db/races';
+import { deleteRaceTextures } from '@/lib/db/storage';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { RaceStatus } from '@/lib/types';
 
@@ -57,6 +58,11 @@ export async function PATCH(
     const updated = await updateRaceStatus(params.raceId, newStatus, extra);
     if (!updated) {
       return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
+    }
+
+    // Terminal state: uploaded marble textures are never read again
+    if (newStatus === 'cancelled') {
+      await deleteRaceTextures(params.raceId);
     }
 
     // Log action

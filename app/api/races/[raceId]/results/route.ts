@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { insertResults, hasResults, getResultsByRace } from '@/lib/db/results';
 import { updateRaceStatus } from '@/lib/db/races';
+import { deleteRaceTextures } from '@/lib/db/storage';
 import { upsertLeaderboardEntry } from '@/lib/db/leaderboard';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { FinishResult } from '@/lib/types';
@@ -92,6 +93,9 @@ export async function POST(
     await updateRaceStatus(raceId, 'complete', {
       completedAt: new Date().toISOString(),
     });
+
+    // Textures are only read while the race is live — free the storage
+    await deleteRaceTextures(raceId);
 
     // Log admin action
     await supabaseAdmin.from('admin_actions').insert({

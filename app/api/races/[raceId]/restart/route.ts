@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { deleteRaceTextures } from '@/lib/db/storage';
 import { Race, RaceRow } from '@/lib/types';
 
 function checkAdmin(req: NextRequest): boolean {
@@ -33,10 +34,12 @@ export async function POST(
   }
 
   try {
-    // Clear entrants and results, reset race to entries_open
+    // Clear entrants and results, reset race to entries_open. The cleared
+    // entrants' uploaded textures are orphaned, so remove those too.
     await Promise.all([
       supabaseAdmin.from('entrants').delete().eq('race_id', params.raceId),
       supabaseAdmin.from('race_results').delete().eq('race_id', params.raceId),
+      deleteRaceTextures(params.raceId),
     ]);
 
     const { data, error } = await supabaseAdmin
